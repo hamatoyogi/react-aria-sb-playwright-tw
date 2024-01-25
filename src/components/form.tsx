@@ -1,5 +1,11 @@
 import * as React from 'react';
-import { XIcon, CheckIcon, OpenEyeIcon, ClosedEyeIcon } from './icons';
+import {
+  XIcon,
+  CheckIcon,
+  OpenEyeIcon,
+  ClosedEyeIcon,
+  LockIcon,
+} from './icons';
 import { string, object } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -9,9 +15,9 @@ export interface PasswordFormProps {
 }
 
 interface PasswordRequirements {
-  length: boolean;
-  specialCharacter: boolean;
-  lowerCase: boolean;
+  isLongEnough: boolean;
+  hasOneSpecialCharacter: boolean;
+  hasOneLowercase: boolean;
 }
 
 const SCORE_TEXT = ['Weak', 'OK', 'Good', 'Strong'];
@@ -32,14 +38,17 @@ export const PasswordForm: React.FC<PasswordFormProps> = ({
   });
   const passwordWatch = watch('password');
   const requirementsMet = React.useMemo<PasswordRequirements>(() => {
-    const length = passwordWatch.length >= 8;
-    const specialCharacter = specialCharRegEx.test(passwordWatch);
-    const lowerCase = atLeastOneLowerCaseRegEx.test(passwordWatch);
-    return { length, specialCharacter, lowerCase };
+    const isLongEnough = passwordWatch.length >= 8;
+    const hasOneSpecialCharacter = specialCharRegEx.test(passwordWatch);
+    const hasOneLowercase = atLeastOneLowerCaseRegEx.test(passwordWatch);
+    return { isLongEnough, hasOneSpecialCharacter, hasOneLowercase };
   }, [passwordWatch]);
   const isSubmitEnabled = React.useMemo<boolean>(() => {
-    const { length, specialCharacter, lowerCase } = requirementsMet;
-    return [length, specialCharacter, lowerCase].some((value) => value);
+    const { isLongEnough, hasOneSpecialCharacter, hasOneLowercase } =
+      requirementsMet;
+    return [isLongEnough, hasOneSpecialCharacter, hasOneLowercase].some(
+      (value) => value
+    );
   }, [requirementsMet]);
   const meterScore = React.useMemo<number>(() => {
     return Object.values(requirementsMet).reduce((acc, value) => {
@@ -57,13 +66,12 @@ export const PasswordForm: React.FC<PasswordFormProps> = ({
     onPasswordCreation(data.password);
   };
 
-  console.log({ meterScore });
-
   return (
     <main className="bg-emerald-200 flex flex-col justify-center items-center px-16 py-12 max-md:px-5">
       <section className="bg-slate-50 flex w-[455px] max-w-full flex-col mt-6 mb-6 px-10 py-12 rounded-[32px] max-md:px-5">
+        <LockIcon />
         <h1
-          className="text-neutral-800 text-2xl font-bold leading-10 self-center whitespace-nowrap mt-1.5"
+          className="text-neutral-800 text-2xl font-bold leading-10 whitespace-nowrap mt-1.5"
           aria-label="Create secure password"
         >
           Create a secure password
@@ -111,15 +119,19 @@ export const PasswordForm: React.FC<PasswordFormProps> = ({
             <p>Must contain at least:</p>
             <ul className="mt-4">
               <li className="flex gap-4">
-                {requirementsMet.length ? <CheckIcon /> : <XIcon />}
+                {requirementsMet.isLongEnough ? <CheckIcon /> : <XIcon />}
                 <span>8 characters</span>
               </li>
               <li className="flex gap-4">
-                {requirementsMet.specialCharacter ? <CheckIcon /> : <XIcon />}
+                {requirementsMet.hasOneSpecialCharacter ? (
+                  <CheckIcon />
+                ) : (
+                  <XIcon />
+                )}
                 <span>1 special character</span>
               </li>
               <li className="flex gap-4">
-                {requirementsMet.lowerCase ? <CheckIcon /> : <XIcon />}
+                {requirementsMet.hasOneLowercase ? <CheckIcon /> : <XIcon />}
                 <span>1 lower case character</span>
               </li>
             </ul>
