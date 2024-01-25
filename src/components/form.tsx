@@ -1,9 +1,11 @@
 import * as React from 'react';
 import { XIcon, CheckIcon } from './icons';
-import { string } from 'zod';
+import { string, object } from 'zod';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 
 export interface PasswordFormProps {
-  onAccountCreation: (password: string) => void;
+  onPasswordCreation: (password: string) => void;
 }
 
 interface PasswordRequirements {
@@ -12,59 +14,33 @@ interface PasswordRequirements {
   lowerCase: boolean;
 }
 
-type PasswordRequirementsKeys = keyof PasswordRequirements;
-
 const specialCharRegEx = /(?=(?:.*[!@#$%^&*()\-_=+{};:,<.>]){1,})/;
 const atLeastOneLowerCaseRegEx = /([a-z]){1,}/;
-const passwordValidator = string()
-  .min(1)
-  .min(8, 'length')
-  .regex(atLeastOneLowerCaseRegEx, 'lowerCase')
-  .regex(specialCharRegEx, 'specialCharacter');
+
+const passwordFormSchema = object({ password: string().min(1) });
 
 export const PasswordForm: React.FC<PasswordFormProps> = ({
-  onAccountCreation,
+  onPasswordCreation,
 }) => {
-  const [password, setPassword] = React.useState<string>('');
-  const [requirementsMet, setRequirementsMet] =
-    React.useState<PasswordRequirements>({
-      length: false,
-      specialCharacter: false,
-      lowerCase: false,
-    });
+  const { register, handleSubmit, watch } = useForm({
+    resolver: zodResolver(passwordFormSchema),
+    defaultValues: {
+      password: '',
+    },
+  });
+  const passwordWatch = watch('password');
+  const requirementsMet = React.useMemo<PasswordRequirements>(() => {
+    const length = passwordWatch.length >= 8;
+    const specialCharacter = specialCharRegEx.test(passwordWatch);
+    const lowerCase = atLeastOneLowerCaseRegEx.test(passwordWatch);
+    return { length, specialCharacter, lowerCase };
+  }, [passwordWatch]);
+
   const [shouldShowPassword, setShouldShowPassword] =
     React.useState<boolean>(false);
 
-  const handleAccountCreation = (event: React.FormEvent) => {
-    event.preventDefault();
-    const res = passwordValidator.safeParse(password);
-    console.log({ res });
-    if (!res.success) {
-      const formatedErrors = res.error.format();
-      formatedErrors._errors.forEach((error: string) => {
-        console.log({ error });
-        switch (error) {
-          case 'length':
-            setRequirementsMet((prev) => ({ ...prev, length: true }));
-            break;
-          case 'specialCharacter':
-            setRequirementsMet((prev) => ({
-              ...prev,
-              specialCharacter: true,
-            }));
-            break;
-          case 'lowerCase':
-            setRequirementsMet((prev) => ({ ...prev, lowerCase: true }));
-            break;
-          default:
-            break;
-        }
-      });
-      console.log({ formatedErrors });
-      console.log({ requirementsMet });
-      return;
-    }
-    onAccountCreation(password);
+  const onSubmit = (data: { password: string }) => {
+    onPasswordCreation(data.password);
   };
 
   return (
@@ -77,7 +53,7 @@ export const PasswordForm: React.FC<PasswordFormProps> = ({
           Create a secure password
         </h1>
         <form
-          onSubmit={handleAccountCreation}
+          onSubmit={handleSubmit(onSubmit)}
           className="flex flex-col gap-6 mt-10"
         >
           <div className="flex items-center gap-4 relative">
@@ -88,11 +64,9 @@ export const PasswordForm: React.FC<PasswordFormProps> = ({
               Password:
             </label>
             <input
+              {...register('password')}
               type={shouldShowPassword ? 'text' : 'password'}
               id="password"
-              name="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter secure password"
               className="w-full text-black text-opacity-50 text-base leading-5 whitespace-nowrap border bg-white self-stretch justify-center pl-6 pr-16 py-6 rounded-xl border-solid border-black border-opacity-10 items-start max-md:px-5"
               aria-label="Password Input"
@@ -143,7 +117,7 @@ export const PasswordForm: React.FC<PasswordFormProps> = ({
           <div className="flex justify-between items-center">
             <p>Password stregth</p>
             <meter
-              value={password.length}
+              value={2}
               max="3"
               low={1}
               high={2.7}
