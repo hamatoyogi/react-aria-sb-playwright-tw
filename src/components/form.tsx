@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { XIcon, CheckIcon } from './icons';
+import { XIcon, CheckIcon, OpenEyeIcon, ClosedEyeIcon } from './icons';
 import { string, object } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -13,6 +13,8 @@ interface PasswordRequirements {
   specialCharacter: boolean;
   lowerCase: boolean;
 }
+
+const SCORE_TEXT = ['Weak', 'OK', 'Good', 'Strong'];
 
 const specialCharRegEx = /(?=(?:.*[!@#$%^&*()\-_=+{};:,<.>]){1,})/;
 const atLeastOneLowerCaseRegEx = /([a-z]){1,}/;
@@ -35,6 +37,18 @@ export const PasswordForm: React.FC<PasswordFormProps> = ({
     const lowerCase = atLeastOneLowerCaseRegEx.test(passwordWatch);
     return { length, specialCharacter, lowerCase };
   }, [passwordWatch]);
+  const isSubmitEnabled = React.useMemo<boolean>(() => {
+    const { length, specialCharacter, lowerCase } = requirementsMet;
+    return [length, specialCharacter, lowerCase].some((value) => value);
+  }, [requirementsMet]);
+  const meterScore = React.useMemo<number>(() => {
+    return Object.values(requirementsMet).reduce((acc, value) => {
+      if (value) {
+        return acc + 1;
+      }
+      return acc;
+    }, 0);
+  }, [requirementsMet]);
 
   const [shouldShowPassword, setShouldShowPassword] =
     React.useState<boolean>(false);
@@ -42,6 +56,8 @@ export const PasswordForm: React.FC<PasswordFormProps> = ({
   const onSubmit = (data: { password: string }) => {
     onPasswordCreation(data.password);
   };
+
+  console.log({ meterScore });
 
   return (
     <main className="bg-emerald-200 flex flex-col justify-center items-center px-16 py-12 max-md:px-5">
@@ -76,55 +92,20 @@ export const PasswordForm: React.FC<PasswordFormProps> = ({
               className="underline text-slate-400 absolute right-2 hover:text-slate-300"
               onClick={() => setShouldShowPassword(!shouldShowPassword)}
             >
-              {shouldShowPassword ? (
-                <svg
-                  className="w-6 h-6"
-                  aria-hidden="true"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke="currentColor"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M4 14c-.5-.6-.9-1.3-1-2 0-1 4-6 9-6m7.6 3.8A5 5 0 0 1 21 12c0 1-3 6-9 6h-1m-6 1L19 5m-4 7a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
-                  />
-                </svg>
-              ) : (
-                <svg
-                  className="w-6 h-6 "
-                  aria-hidden="true"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    d="M21 12c0 1.2-4 6-9 6s-9-4.8-9-6c0-1.2 4-6 9-6s9 4.8 9 6Z"
-                  />
-                  <path
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
-                  />
-                </svg>
-              )}
+              {shouldShowPassword ? <OpenEyeIcon /> : <ClosedEyeIcon />}
             </button>
           </div>
           <div className="flex justify-between items-center">
             <p>Password stregth</p>
             <meter
-              value={2}
+              value={meterScore}
               max="3"
               low={1}
               high={2.7}
               optimum={3}
               className="w-1/2"
             />
-            <p>Weak</p>
+            <p>{SCORE_TEXT[meterScore]}</p>
           </div>
           <div>
             <p>Must contain at least:</p>
@@ -145,7 +126,8 @@ export const PasswordForm: React.FC<PasswordFormProps> = ({
           </div>
           <button
             type="submit"
-            className="text-white text-center text-xl leading-7 bg-emerald-300 self-center justify-center mt-5 px-12 py-6 rounded-2xl max-md:px-5 w-full"
+            className="text-white text-center text-xl leading-7 disabled:bg-slate-100 transition-colors bg-emerald-300 self-center justify-center mt-5 px-12 py-6 rounded-2xl max-md:px-5 w-full"
+            disabled={!isSubmitEnabled}
           >
             Continue
           </button>
