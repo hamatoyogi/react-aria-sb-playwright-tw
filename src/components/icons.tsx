@@ -1,6 +1,6 @@
-export const CheckIcon = () => {
+export const CheckIcon = () => (
   <svg
-    className="w-6 h-6 text-green-400 dark:text-white"
+    className="w-6 h-6 text-green-400"
     aria-hidden="true"
     xmlns="http://www.w3.org/2000/svg"
     fill="none"
@@ -8,13 +8,13 @@ export const CheckIcon = () => {
   >
     <path
       stroke="currentColor"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      stroke-width="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
       d="m5 12 4.7 4.5 9.3-9"
     />
-  </svg>;
-};
+  </svg>
+);
 
 export const XIcon = () => (
   <svg

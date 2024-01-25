@@ -1,19 +1,69 @@
 import * as React from 'react';
 import { XIcon, CheckIcon } from './icons';
+import { string } from 'zod';
 
 export interface PasswordFormProps {
   onAccountCreation: (password: string) => void;
 }
 
+interface PasswordRequirements {
+  length: boolean;
+  specialCharacter: boolean;
+  lowerCase: boolean;
+}
+
+type PasswordRequirementsKeys = keyof PasswordRequirements;
+
+const specialCharRegEx = /(?=(?:.*[!@#$%^&*()\-_=+{};:,<.>]){1,})/;
+const atLeastOneLowerCaseRegEx = /([a-z]){1,}/;
+const passwordValidator = string()
+  .min(1)
+  .min(8, 'length')
+  .regex(atLeastOneLowerCaseRegEx, 'lowerCase')
+  .regex(specialCharRegEx, 'specialCharacter');
+
 export const PasswordForm: React.FC<PasswordFormProps> = ({
   onAccountCreation,
 }) => {
   const [password, setPassword] = React.useState<string>('');
+  const [requirementsMet, setRequirementsMet] =
+    React.useState<PasswordRequirements>({
+      length: false,
+      specialCharacter: false,
+      lowerCase: false,
+    });
   const [shouldShowPassword, setShouldShowPassword] =
     React.useState<boolean>(false);
 
   const handleAccountCreation = (event: React.FormEvent) => {
     event.preventDefault();
+    const res = passwordValidator.safeParse(password);
+    console.log({ res });
+    if (!res.success) {
+      const formatedErrors = res.error.format();
+      formatedErrors._errors.forEach((error: string) => {
+        console.log({ error });
+        switch (error) {
+          case 'length':
+            setRequirementsMet((prev) => ({ ...prev, length: true }));
+            break;
+          case 'specialCharacter':
+            setRequirementsMet((prev) => ({
+              ...prev,
+              specialCharacter: true,
+            }));
+            break;
+          case 'lowerCase':
+            setRequirementsMet((prev) => ({ ...prev, lowerCase: true }));
+            break;
+          default:
+            break;
+        }
+      });
+      console.log({ formatedErrors });
+      console.log({ requirementsMet });
+      return;
+    }
     onAccountCreation(password);
   };
 
@@ -22,7 +72,7 @@ export const PasswordForm: React.FC<PasswordFormProps> = ({
       <section className="bg-slate-50 flex w-[455px] max-w-full flex-col mt-6 mb-6 px-10 py-12 rounded-[32px] max-md:px-5">
         <h1
           className="text-neutral-800 text-2xl font-bold leading-10 self-center whitespace-nowrap mt-1.5"
-          aria-label="Create Account Title"
+          aria-label="Create secure password"
         >
           Create a secure password
         </h1>
@@ -106,13 +156,16 @@ export const PasswordForm: React.FC<PasswordFormProps> = ({
             <p>Must contain at least:</p>
             <ul className="mt-4">
               <li className="flex gap-4">
-                <XIcon /> <span>8 characters</span>
+                {requirementsMet.length ? <CheckIcon /> : <XIcon />}
+                <span>8 characters</span>
               </li>
               <li className="flex gap-4">
-                <XIcon /> <span>1 special character</span>
+                {requirementsMet.specialCharacter ? <CheckIcon /> : <XIcon />}
+                <span>1 special character</span>
               </li>
               <li className="flex gap-4">
-                <XIcon /> <span>1 lower case character</span>
+                {requirementsMet.lowerCase ? <CheckIcon /> : <XIcon />}
+                <span>1 lower case character</span>
               </li>
             </ul>
           </div>
